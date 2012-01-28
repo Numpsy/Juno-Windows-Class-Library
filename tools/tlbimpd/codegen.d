@@ -188,7 +188,7 @@ class CodeGenerator {
       }
 
       types = typeLib.findTypes((Type type) {
-        return type !is null && type.isCoClass;
+        return type !is null && type.isCoClass && (type.attributes & TypeAttributes.CoClassIsCreatable);
       });
       if (types.length > 0) {
         if (emitComments) {

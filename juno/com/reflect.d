@@ -399,8 +399,11 @@ class TypeLibrary {
 
         switch (typeKind) {
           case TYPEKIND.TKIND_COCLASS:
+            auto attrs = TypeAttributes.CoClass;
             if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FCANCREATE)
-              types_ ~= new TypeImpl(typeInfo, TypeAttributes.CoClass, this);
+              attrs |= TypeAttributes.CoClassIsCreatable;
+
+            types_ ~= new TypeImpl(typeInfo, attrs, this);
             break;
 
           case TYPEKIND.TKIND_INTERFACE:
@@ -618,7 +621,8 @@ enum TypeAttributes {
   InterfaceIsDual     = 0x100,
   InterfaceIsDispatch = 0x200,
   InterfaceIsDefault  = 0x400,
-  InterfaceIsSource   = 0x800
+  InterfaceIsSource   = 0x800,
+  CoClassIsCreatable  = 0x1000
 }
 
 /**
