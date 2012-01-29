@@ -120,7 +120,73 @@ class CodeGenerator {
       output.writeln();
   }
 
+  private void swapCoClassParameters(TypeLibrary typeLib) {
+    
+    Type[] coClasses = typeLib.findTypes((Type type) {
+      return type !is null && type.isCoClass;
+    });
+    
+    Type[] interfaceTypes = typeLib.findTypes((Type type) {
+      return type !is null && type.isInterface;
+    });
+    
+    Type getCoClassType(string parameterTypeName) {
+      foreach (coClass; coClasses) {
+        //Handle pointer types as well
+        import std.string;
+        string pointerlessType = chomp(parameterTypeName, ['*']);
+        if (coClass.name == pointerlessType)
+          return coClass;
+      }
+
+      return null;
+    }
+    
+    void processParameter(Parameter parameter) {
+      auto parameterType = parameter.parameterType;
+      Type ccType = getCoClassType(parameterType.name);
+
+      if (ccType !is null) {
+        foreach (t; ccType.getInterfaces()) {
+          if ( (t.attributes & TypeAttributes.InterfaceIsDefault) &&
+               ((t.attributes & TypeAttributes.InterfaceIsSource) == 0)) {
+            parameter.parameterType = t;
+            break;
+          }
+        }
+      }
+    }
+    
+    void processMember(Member typeMember) {
+      if (typeMember.memberType & MemberTypes.Method) {
+        auto memberParameters = (cast(Method)typeMember).getParameters();
+        
+        foreach (methodParameter; memberParameters) {
+          processParameter(methodParameter);
+        }
+      }
+    }
+    
+    void processType(Type type) {
+      foreach(typeMember; type.getMembers()) {
+         processMember(typeMember);
+      }
+    }
+    
+    if (coClasses.length > 0 && interfaceTypes.length > 0) {
+      foreach (type; interfaceTypes) {
+        if (type !is null) {
+          processType(type);
+        }
+      }
+    }
+  }
+
   private void generateTypes(TypeLibrary typeLib) {
+
+    //if (replaceCoClassParameters)      
+      this.swapCoClassParameters(typeLib);
+
     if (verbatimOrder) {
       foreach (type; typeLib.getTypes()) {
         if (type !is null) {
